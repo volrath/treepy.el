@@ -1,6 +1,6 @@
 ;;; treepy-test.el ---            -*- lexical-binding: t -*-
 ;; 
-;; Filename: treepy-test.el
+;; Filename: treepy.el-walker-test.el
 ;; Description: 
 ;; Author: Daniel Barreto
 ;; Maintainer: 
@@ -50,7 +50,7 @@
 (require 'seq)
 (require 'treepy)
 
-(ert-deftest treepy-test-identity-walk ()
+(ert-deftest treepy-identity-walk-test ()
   (let ((colls `((1 2 3)
                  [1 2 3]
                  ((:a . 1) (:b . 2) (:c . 3)))))
@@ -66,7 +66,7 @@
     (should (equal (map-pairs hash)
                    (treepy-walk #'identity #'identity hash)))))
 
-(ert-deftest treepy-test-walk ()
+(ert-deftest treepy-walk-test ()
   (let ((colls '((1 2 3)
                  [1 2 3])))
     (dolist (coll colls)
@@ -85,12 +85,11 @@
         (should (equal (seq-reduce #'+ (mapcar #'1+ (map-values map)) 0) walked))
         (should (equal walked 9))))))
 
-(ert-deftest treepy-test-prewalk-order ()
+(ert-deftest treepy-prewalk-order-test ()
   (let ((hash (make-hash-table :test #'equal)))
     (puthash :b 5 hash)
     (puthash :c 6 hash)
     (let ((tree `(1 2 [3 4] ((:a . ,hash) (:d . 7)))))
-      (message "%S" (treepy-prewalk-demo tree))
       (should (equal (treepy-prewalk-demo tree)
                      `((1 2 [3 4] ((:a . ,hash) (:d . 7)))
                        1
@@ -114,7 +113,7 @@
       ;; tree should remain the same
       (should (equal tree `(1 2 [3 4] ((:a . ,hash) (:d . 7))))))))
 
-(ert-deftest treepy-test-postwalk-order ()
+(ert-deftest treepy-postwalk-order-test ()
   (let ((hash (make-hash-table :test #'equal)))
     (puthash :b 5 hash)
     (puthash :c 6 hash)
@@ -142,11 +141,11 @@
       ;; tree should remain the same
       (should (equal tree `(1 2 [3 4] ((:a . ,hash) (:d . 7))))))))
 
-(ert-deftest treepy-test-prewalk-replace ()
+(ert-deftest treepy-prewalk-replace-test ()
   (should (equal (treepy-prewalk-replace '((:a . :b)) '(:a (1 2 3 :c :a) ((:a . :c) (:c . :a))))
                  '(:b (1 2 3 :c :b) ((:b . :c) (:c . :b))))))
 
-(ert-deftest treepy-test-postwalk-replace ()
+(ert-deftest treepy-postwalk-replace-test ()
   (should (equal (treepy-postwalk-replace '((:a . :b)) '(:a (1 2 3 :c :a) ((:a . :c) (:c . :a))))
                  '(:b (1 2 3 :c :b) ((:b . :c) (:c . :b))))))
 
