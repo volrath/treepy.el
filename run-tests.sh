@@ -12,4 +12,5 @@ if [ -n "$TRAVIS" ]; then
     echo
 fi
 
+cask emacs --batch -Q -l package-lint.el -f package-lint-batch-and-exit treepy.el
 cask exec ert-runner -L . -L test "$@"
