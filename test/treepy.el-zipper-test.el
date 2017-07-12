@@ -1,30 +1,21 @@
-;;; treepy.el-test.el --- 
+;;; treepy.el --- Generic tree traversing tools           -*- lexical-binding: t -*-
 ;; 
-;; Filename: treepy.el-test.el
-;; Description: 
-;; Author: Daniel Barreto
-;; Maintainer: 
-;; Created: Tue Jul 11 17:52:34 2017 (+0200)
-;; Version: 
-;; Package-Requires: ()
-;; Last-Updated: 
-;;           By: 
-;;     Update #: 0
-;; URL: 
-;; Doc URL: 
-;; Keywords: 
-;; Compatibility: 
+;; Filename: treepy.el
+;;
+;; Description: Generic Tree Traversing Tools
+;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
+;; Keywords: tree, node, traversing, walk, zipper
+;; Created: Mon Jul 10 15:17:36 2017 (+0200)
+;; Version: 1.0
+;; Package-Requires: ((emacs "25"))
+;; URL: https://github.com/volrath/treepy.el
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
 ;;; Commentary: 
 ;; 
-;; 
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Change Log:
-;; 
+;; Generic tools for recursive and iterative tree traversing based on
+;; clojure.walk and clojure.zip respectively.
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
