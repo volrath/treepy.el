@@ -252,7 +252,87 @@ and `r' for LOC."
 
 ;; Modification
 
+(defun treepy-insert-left (loc item)
+  (with-loc loc
+    (if (not context)
+        (error "Insert at top")
+      (treepy--with-meta
+       (cons node
+             (treepy--context-assoc context
+                                    ':l (cons item l)
+                                    ':changed? t))
+       (treepy--meta loc)))))
+
+(defun treepy-insert-right (loc item)
+  (with-loc loc
+    (if (not context)
+        (error "Insert at top")
+      (treepy--with-meta
+       (cons node
+             (treepy--context-assoc context
+                                    ':r (cons item r)
+                                    ':changed? t))
+       (treepy--meta loc)))))
+
+(defun treepy-replace (loc node)
+  (let ((context (treepy--context loc)))
+    (treepy--with-meta
+     (cons node
+           (treepy--context-assoc context
+                                  ':changed? t))
+     (treepy--meta loc))))
+
+(defun treepy-edit (loc f &rest args)
+  (treepy-replace loc (apply f (treepy-node loc) args)))
+
+(defun treepy-insert-child (loc item)
+  (treepy-replace loc (treepy-make-node loc (treepy-node loc) (cons item (treepy-children loc)))))
+
+(defun treepy-append-child (loc item)
+  (treepy-replace loc (treepy-make-node loc (treepy-node loc) (append (treepy-children loc) `(,item)))))  ;; TODO: check performance
+
+(defun treepy-remove (loc)
+  (with-loc loc
+    (if (not context)
+        (error "Remove at top")
+      (if (> (length l) 0)
+          (let ((nloc (treepy--with-meta (cons (car l)
+                                               (treepy--context-assoc context
+                                                                      ':l (cdr l)
+                                                                      ':changed? t))
+                       (treepy--meta loc))))
+            (while (setq child (and (treepy-branch-p nloc) (treepy-children nloc)))
+              (setq nloc (treepy-rightmost child)))
+            nloc)
+        (treepy--with-meta
+         (cons (treepy-make-node loc (car pnodes) r)
+               (and ppath (treepy--context-assoc context ':changed? t)))
+         (treepy--meta loc))))))
+
 ;; Enumeration
+
+(defun treepy-next (loc)
+  (if (equal :end (treepy--context loc))
+      loc
+    (or
+     (and (treepy-branch-p loc) (treepy-down loc))
+     (treepy-right loc)
+     (let ((p loc))
+       (while (and (treepy-up p) (not (setq pr (treepy-right (treepy-up p)))))
+         (setq p (treepy-up p)))
+       (or pr (cons (cons (treepy-node p) ':end) nil))))))
+
+(defun treepy-prev (loc)
+  (let ((lloc (treepy-left loc)))
+    (if lloc
+        (progn
+          (while (setq child (and (treepy-branch-p lloc) (treepy-children lloc)))
+            (setq lloc (treepy-rightmost child)))
+          lloc)
+      (treepy-up loc))))
+
+(defun treepy-end-p (loc)
+  (equal :end (treepy--context loc)))
 
 (provide 'treepy)
 

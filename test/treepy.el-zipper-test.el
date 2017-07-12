@@ -49,6 +49,7 @@
 (require 'treepy)
 
 (defvar list-tree '((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7))))))
+(defvar vector-tree [[a * b] + [c * d]])
 
 (defmacro assert-traversing-with-persistent-zipper (binding-vector &rest body)
   (declare (indent defun)
@@ -60,18 +61,16 @@
                      `(progn
                         (setq ,var-name ,navigation)
                         (let ((loc (car ,var-name)))
-                          (message "LOC:      %S" loc)
-                          (message "EXPECTED: %S" ,expected)
                           (should (equal loc ,expected))))))
                  (seq-partition body 2)))))
 
-(defmacro -> (x form &rest more)
-  (cond ((not (null more)) `(-> (-> ,x ,form) ,@more))
-        (t (if (sequencep form)
-               `(if (null ,x) nil
-                  (,(first form) ,x ,@(rest form)))
-             `(if (null ,x) nil
-                ,(list form x))))))
+(defmacro -> (&rest body)
+  (let ((result (pop body)))
+    (dolist (form body result)
+      (setq result
+            (if (sequencep form)
+                `(,(car form) ,result ,@(cdr form))
+              `(,form ,result))))))
 
 (ert-deftest treepy-roundtrip-test ()
   (let ((lz (treepy-list-zip list-tree)))
@@ -79,17 +78,20 @@
     (should (equal list-tree (treepy-node lz)))))
 
 (ert-deftest treepy-navigation ()
-  (assert-traversing-with-persistent-zipper [lz (treepy-list-zipper list-tree)]
-    ;; (-> lz
-    ;;     treepy-down
-    ;;     treepy-right treepy-right treepy-right
-    ;;     treepy-down)
-    (treepy-down (treepy-right (treepy-right (treepy-right (treepy-down lz)))))
+  (assert-traversing-with-persistent-zipper [lz (treepy-list-zip list-tree)]
+    (-> lz
+        treepy-down
+        treepy-right
+        treepy-right
+        treepy-right
+        treepy-down)
     '((:a 5) . ((:l . nil)
                 (:pnodes . (((:a 5) (:b ((:c 6) (:d 7)))) ((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7)))))))
                 (:ppath . ((:l . (4 3 (1 2))) (:pnodes . (((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7))))))) (:ppath) (:r)))
                 (:r . ((:b ((:c 6) (:d 7)))))))
-    (treepy-right (treepy-down lz))
+    (-> lz
+        treepy-down
+        treepy-right)
     '(5 . ((:l . (:a))
            (:pnodes . ((:a 5) ((:a 5) (:b ((:c 6) (:d 7)))) ((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7)))))))
            (:ppath . ((:l . nil)
@@ -97,7 +99,8 @@
                       (:ppath . ((:l . (4 3 (1 2))) (:pnodes . (((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7))))))) (:ppath) (:r)))
                       (:r . ((:b ((:c 6) (:d 7)))))))
            (:r . nil)))
-    (treepy-left lz)
+    (-> lz
+        treepy-left)
     '(:a . ((:l . nil)
             (:pnodes . ((:a 5) ((:a 5) (:b ((:c 6) (:d 7)))) ((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7)))))))
             (:ppath . ((:l . nil)
@@ -105,11 +108,146 @@
                        (:ppath . ((:l . (4 3 (1 2))) (:pnodes . (((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7))))))) (:ppath) (:r)))
                        (:r . ((:b ((:c 6) (:d 7)))))))
             (:r . (5))))
-    (treepy-left (treepy-left (treepy-up (treepy-up lz))))
+    (-> lz
+        treepy-up
+        treepy-up
+        treepy-left
+        treepy-left)
     '(3 . ((:l . ((1 2)))
            (:pnodes . (((1 2) 3 4 ((:a 5) (:b ((:c 6) (:d 7)))))))
            (:ppath . nil)
-           (:r . (4 ((:a 5) (:b ((:c 6) (:d 7))))))))))
+           (:r . (4 ((:a 5) (:b ((:c 6) (:d 7))))))))
+    (-> lz
+        treepy-up)
+    `(,list-tree . ,nil)))
+
+(ert-deftest treepy-context-test ()
+  (let ((vz (treepy-vector-zip vector-tree)))
+    (should (equal '(c)
+                   (-> vz
+                       treepy-down
+                       treepy-right
+                       treepy-right
+                       treepy-down
+                       treepy-right
+                       treepy-lefts)))
+    (should (equal '(d)
+                   (-> vz
+                       treepy-down
+                       treepy-right
+                       treepy-right
+                       treepy-down
+                       treepy-right
+                       treepy-rights)))
+    (should (equal '([[a * b] + [c * d]] [c * d])
+                   (-> vz
+                       treepy-down
+                       treepy-right
+                       treepy-right
+                       treepy-down
+                       treepy-right
+                       treepy-path)))))
+
+(ert-deftest treepy-navigation-and-editing-test ()
+  (let ((vz (treepy-vector-zip vector-tree)))
+    (should (equal [[a * b] + [c / d]]
+                   (-> vz
+                       treepy-down
+                       treepy-right
+                       treepy-right
+                       treepy-down
+                       treepy-right
+                       (treepy-replace '/)
+                       treepy-root)))
+    (should (equal [["a" * b] / [c * d]]
+                   (-> vz
+                       treepy-next
+                       treepy-next
+                       (treepy-edit #'symbol-name)
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       (treepy-replace '/)
+                       treepy-root)))
+    (should (equal [[a * b] + [c *]]
+                   (-> vz
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-remove
+                       treepy-root)))
+    (should (equal [[a * b] + [c * e]]
+                   (-> vz
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-remove
+                       (treepy-insert-right 'e)
+                       treepy-root)))
+    (should (equal [[a * b] + [c * e]]
+                   (-> vz
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-next
+                       treepy-remove
+                       treepy-up
+                       (treepy-append-child 'e)
+                       treepy-root)))
+    (should (equal [[c * d]]
+                   (-> vz
+                       treepy-next
+                       treepy-remove
+                       treepy-next
+                       treepy-remove
+                       treepy-root)))))
+
+(ert-deftest treepy-end-p-test ()
+  (should (treepy-end-p (-> (treepy-vector-zip vector-tree)
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-next
+                            treepy-remove
+                            treepy-next))))
+
+(ert-deftest treepy-loop-test ()
+  (should (equal [[a / b] + [c / d]]
+                 (let ((loc (treepy-vector-zip vector-tree)))
+                   (while (not (treepy-end-p loc))
+                     (setq loc (treepy-next (if (equal '* (treepy-node loc))
+                                                (treepy-replace loc '/)
+                                              loc))))
+                   (treepy-root loc))))
+  (should (equal [[a b] + [c d]]
+                 (let ((loc (treepy-vector-zip vector-tree)))
+                   (while (not (treepy-end-p loc))
+                     (setq loc (treepy-next (if (equal '* (treepy-node loc))
+                                                (treepy-remove loc)
+                                              loc))))
+                   (treepy-root loc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy.el-test.el ends here
