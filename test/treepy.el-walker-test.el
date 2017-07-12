@@ -1,13 +1,12 @@
-;;; treepy.el --- Generic tree traversing tools           -*- lexical-binding: t -*-
+;;; treepy-walker-tests.el --- Generic tree traversing tools           -*- lexical-binding: t -*-
 ;; 
-;; Filename: treepy.el
+;; Filename: treepy.el-walker-test.el
 ;;
 ;; Description: Generic Tree Traversing Tools
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
-;; Keywords: tree, node, traversing, walk, zipper
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
 ;; Version: 1.0
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/volrath/treepy.el
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,4 +140,4 @@
                  '(:b (1 2 3 :c :b) ((:b . :c) (:c . :b))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; treepy-test.el ends here
+;;; treepy-walker-tests.el ends here

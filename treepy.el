@@ -4,10 +4,10 @@
 ;;
 ;; Description: Generic Tree Traversing Tools
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
-;; Keywords: tree, node, traversing, walk, zipper
+;; Keywords: lisp, maint, tools
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
 ;; Version: 1.0
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/volrath/treepy.el
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,7 +111,7 @@
 (defun treepy--join-children (left-children right-children)
   (append (reverse left-children) right-children))
 
-(defmacro with-loc (loc &rest body)
+(defmacro treepy--with-loc (loc &rest body)
   "Binds the variables `node', `context', `l', `pnodes', `ppath',
 and `r' for LOC."
   (declare (indent defun))
@@ -170,7 +170,7 @@ and `r' for LOC."
 (defun treepy-down (loc)
   (when (treepy-branch-p loc)
     (let ((children (treepy-children loc)))
-      (with-loc loc
+      (treepy--with-loc loc
         (seq-let [c &rest cs] children
           (when children
             (treepy--with-meta
@@ -181,7 +181,7 @@ and `r' for LOC."
              (treepy--meta loc))))))))
 
 (defun treepy-up (loc)
-  (with-loc loc
+  (treepy--with-loc loc
     (when pnodes
       (let ((pnode (car pnodes)))
         (treepy--with-meta
@@ -200,7 +200,7 @@ and `r' for LOC."
       (treepy-node loc))))
 
 (defun treepy-right (loc)
-  (with-loc loc
+  (treepy--with-loc loc
     (seq-let [cr &rest rnext] r
       (when (and context r)
         (treepy--with-meta
@@ -211,7 +211,7 @@ and `r' for LOC."
          (treepy--meta loc))))))
 
 (defun treepy-rightmost (loc)
-  (with-loc loc
+  (treepy--with-loc loc
     (if (and context r)
         (treepy--with-meta
          (cons (car (last r))
@@ -222,7 +222,7 @@ and `r' for LOC."
       loc)))
 
 (defun treepy-left (loc)
-  (with-loc loc
+  (treepy--with-loc loc
     (when (and context l)
       (seq-let [cl &rest lnext] l
         (treepy--with-meta
@@ -232,8 +232,8 @@ and `r' for LOC."
                                       ':r (cons node r)))
          (treepy--meta loc))))))
 
-(defun treepy-leftmost (loc)   ;;  TODO: won't work because of `:r' concat
-  (with-loc loc
+(defun treepy-leftmost (loc)
+  (treepy--with-loc loc
     (if (and context l)
         (treepy--with-meta
          (cons (car (last l))
@@ -246,7 +246,7 @@ and `r' for LOC."
 ;; Modification
 
 (defun treepy-insert-left (loc item)
-  (with-loc loc
+  (treepy--with-loc loc
     (if (not context)
         (error "Insert at top")
       (treepy--with-meta
@@ -257,7 +257,7 @@ and `r' for LOC."
        (treepy--meta loc)))))
 
 (defun treepy-insert-right (loc item)
-  (with-loc loc
+  (treepy--with-loc loc
     (if (not context)
         (error "Insert at top")
       (treepy--with-meta
@@ -285,7 +285,7 @@ and `r' for LOC."
   (treepy-replace loc (treepy-make-node loc (treepy-node loc) (append (treepy-children loc) `(,item)))))  ;; TODO: check performance
 
 (defun treepy-remove (loc)
-  (with-loc loc
+  (treepy--with-loc loc
     (if (not context)
         (error "Remove at top")
       (if (> (length l) 0)
