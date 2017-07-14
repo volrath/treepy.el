@@ -36,8 +36,6 @@
 ;;; Code:
 
 (require 'ert)
-(require 'map)
-(require 'seq)
 (require 'treepy)
 
 (ert-deftest treepy-identity-walk-test ()
