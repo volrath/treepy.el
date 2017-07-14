@@ -94,10 +94,21 @@
         (map-elt context key)
       context)))
 
+(defun treepy--context-assoc-1 (context k v)
+  (if (map-contains-key context k)
+      (mapcar (lambda (entry)
+                (if (equal (car entry) k)
+                    (cons k v)
+                  entry))
+              context)
+    (cons (cons k v) context)))
+
 (defun treepy--context-assoc (context &rest kvs)
-  (let ((context-copy (map-copy context)))
-    (dolist (kv (seq-partition kvs 2) context-copy)
-      (map-put context-copy (car kv) (cadr kv)))))
+  "Immutable map association"
+  (seq-reduce (lambda (context kv)
+                (seq-let [k v] kv
+                  (treepy--context-assoc-1 context k v)))
+              (seq-partition kvs 2) context))
 
 (defun treepy--meta (loc &optional key)
   (let ((meta (cdr loc)))
