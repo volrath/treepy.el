@@ -67,6 +67,8 @@
     (should (equal list-tree (treepy-root lz)))
     (should (equal list-tree (treepy-node lz)))))
 
+;;; List Zipper
+
 (ert-deftest treepy-navigation ()
   (assert-traversing-with-persistent-zipper [lz (treepy-list-zip list-tree)]
     (-> lz
@@ -110,6 +112,8 @@
     (-> lz
         treepy-up)
     `(,list-tree . ,nil)))
+
+;;; Vector Zipper
 
 (ert-deftest treepy-context-test ()
   (let ((vz (treepy-vector-zip vector-tree)))
@@ -238,6 +242,175 @@
                                                 (treepy-remove loc)
                                               loc))))
                    (treepy-root loc)))))
+
+
+;;; Preorder vs Postorder
+
+(setq numered-tree '(1 . ((2 . (4 5)) 3)))
+
+(defun numered-children (node)
+  (cdr node))
+
+(defun numered-make-node (node children)
+  `(,node . ,children))
+
+(defun traverse-tree (order)
+  (let ((zp (treepy-zipper #'listp #'numered-children #'numered-make-node numered-tree))
+        (visited nil))
+    (when (equal order :postorder)
+      (setq zp (treepy-leftmost-descendent zp)))
+    (while (not (treepy-end-p zp))
+      (let ((node (treepy-node zp)))
+        (push (if (listp node) (car node) node) visited))
+      (setq zp (treepy-next zp order)))
+    (reverse visited)))
+
+(ert-deftest treepy-test-next-order ()
+  (should (equal (traverse-tree :preorder)
+                 '(1 2 4 5 3)))
+  (should (equal (traverse-tree :postorder)
+                 '(4 5 2 3 1))))
+
+;;; Custom Zipper
+;; Taken from Alex Miller's article: Tree visitors in Clojure
+;; https://www.ibm.com/developerworks/library/j-treevisit/
+
+(defun expected-keys-p (map expected-key-set)
+  (null (seq-difference (map-keys map) expected-key-set)))
+
+(defmacro defnode (node-type fields)
+  "Create a constructor function for a typed map and a well-known
+set of fields (which are validation checked). Constructor will
+be (defn new-&node-type> [field-map])."
+  (let ((constructor-name (intern (concat "new-" (symbol-name node-type)))))
+    `(defun ,constructor-name (nv-map)
+       (if (expected-keys-p nv-map (list ,@fields))
+           (cons '(:type . ,(intern (concat ":" (symbol-name node-type)))) nv-map)
+         (error "Wrong node specification")))))
+
+(defun node-type (ast-node)
+  (if (listp ast-node)
+      (map-elt ast-node ':type)
+    ':leaf))
+
+(defnode root (':children))
+(defnode compare-criteria (':left ':right))
+(defnode concat (':args))
+(defnode value (':val))
+
+(defvar value-1 (new-value '((:val . 1))))
+(defvar concat-1 (new-concat '((:args . ("a" "b")))))
+(defvar concat-2 (new-concat `((:args . ("c" ,value-1)))))
+(defvar concat-3 (new-concat '((:args . ("t" "r" "u" "e")))))
+(defvar concat-4 (new-concat '((:args . ("t" "r" "u" "e")))))
+(defvar cc-1 (new-compare-criteria `((:left . ,concat-1)
+                                     (:right . ,concat-2))))
+(defvar cc-2 (new-compare-criteria `((:left . ,concat-3)
+                                     (:right . ,concat-4))))
+(defvar custom-tree (new-root `((:children . ,(list cc-1 cc-2)))))
+
+;;                         root
+;;                          +
+;;             +------------+------------+
+;;     compare-criteria           compare-criteria
+;;             +                          +
+;;      +------+-------+           +------+-------+
+;;   concat          concat     concat          concat
+;;      +              +           +              +
+;;   +--+-+         +--+--+   +----+---+     +----+---+
+;;   a    b         c    val  t  r  u  e     t  r  u  e
+;;                        +
+;;                        +
+;;                        1
+;; ((:type . :root)
+;;  (:children ((:type . :compare-criteria)
+;;              (:left (:type . :concat) (:args "a" "b"))
+;;              (:right (:type . :concat) (:args "c" ((:type . :value)
+;;                                                    (:val . 1)))))
+;;             ((:type . :compare-criteria)
+;;              (:left (:type . :concat) (:args "t" "r" "u" "e"))
+;;              (:right (:type . :concat) (:args "t" "r" "u" "e")))))
+
+(defun custom-branch-p (node)
+  (and (mapp node)
+       (map-contains-key node ':type)))
+
+(defun custom-children (node)
+  (cl-case (node-type node)
+    (':root (map-elt node ':children))
+    (':compare-criteria (list (map-elt node ':left) (map-elt node ':right)))
+    (':concat (map-elt node ':args))
+    (':value (list (map-elt node ':val)))))
+
+(defun custom-make-node (node children)
+  (let* ((type (node-type node))
+         (constructor (intern (concat "new-" (substring (symbol-name type) 1 nil)))))
+    (funcall constructor
+             (cl-case type
+               (':root `((:children . ,children)))
+               (':compare-criteria `((:left . ,(car children))
+                                     (:right . ,(cadr children))))
+               (':concat `((:args . ,children)))
+               (':value `((:val . ,(car children))))))))
+
+(setq custom-zipper (treepy-zipper #'custom-branch-p #'custom-children #'custom-make-node custom-tree))
+
+(defun can-simplify-concat? (node)
+  (and (equal ':concat (node-type node))
+       (seq-every-p #'stringp (map-elt node ':args))))
+
+(defun can-simplify-cc? (node)
+  (and (equal ':compare-criteria (node-type node))
+       (and (not (listp (map-elt node ':left)))
+            (not (listp (map-elt node ':right))))))
+
+(defun simplify-concat (node)
+  (apply #'concat (map-elt node ':args)))
+
+(defun simplify-cc (node)
+  (equal (map-elt node ':left) (map-elt node ':right)))
+
+(defun simplify-tree (zipper)
+  (let ((loc (treepy-leftmost-descendent zipper)))
+    (if (treepy-end-p loc)
+        (treepy-root loc)
+      (progn
+        (while (not (treepy-end-p (treepy-next loc ':postorder)))
+          (let ((node (treepy-node loc)))
+            (setq loc (treepy-next
+                       (cond
+                        ((can-simplify-concat? node) (treepy-edit loc #'simplify-concat))
+                        ((can-simplify-cc? node) (treepy-edit loc #'simplify-cc))
+                        (t loc))
+                       ':postorder))))
+        (treepy-root loc)))))
+
+;; Test reduction to
+;;                         root
+;;                          +
+;;             +------------+------------+
+;;     compare-criteria                  t
+;;             +
+;;      +------+-------+
+;;     "ab"          concat
+;;                     +
+;;                  +--+--+
+;;                  c    val
+;;                        +
+;;                        +
+;;                        1
+
+(ert-deftest treepy-custom-tree-test ()
+  (should (equal '((:type . :root)
+                   (:children . (((:type . :compare-criteria)
+                                   (:left . "ab")
+                                   (:right . ((:type . :concat)
+                                              (:args "c" ((:type . :value)
+                                                          (:val . 1))))))
+                                 t ;; Second node was replaced by/simplified for `t'
+                                 )))
+                 (simplify-tree custom-zipper))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy-zipper-tests.el ends here
