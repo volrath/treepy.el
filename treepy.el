@@ -315,18 +315,39 @@ and `r' for LOC."
 
 ;; Enumeration
 
-(defun treepy-next (loc)
+(defun treepy-leftmost-descendent (loc)
+  (while (treepy-branch-p loc)
+    (setq loc (treepy-down loc)))
+  loc)
+
+(defun treepy--preorder-next (loc)
   (if (equal :end (treepy--context loc))
       loc
-    (or
-     (and (treepy-branch-p loc) (treepy-down loc))
-     (treepy-right loc)
-     (let ((p loc))
-       (while (and (treepy-up p) (not (setq pr (treepy-right (treepy-up p)))))
-         (setq p (treepy-up p)))
-       (or pr (cons (cons (treepy-node p) ':end) nil))))))
+    (let ((cloc loc))
+      (or
+       (and (treepy-branch-p cloc) (treepy-down cloc))
+       (treepy-right cloc)
+       (let ((p cloc))
+         (while (and (treepy-up p) (not (setq pr (treepy-right (treepy-up p)))))
+           (setq p (treepy-up p)))
+         (or pr (cons (cons (treepy-node p) ':end) nil)))))))
 
-(defun treepy-prev (loc)
+(defun treepy--postorder-next (loc)
+  (if (equal :end (treepy--context loc))
+      loc
+    (if (null (treepy-up loc))
+        (cons (cons (treepy-node loc) ':end) nil)
+      (or (let ((rloc (treepy-right loc)))
+            (and rloc (treepy-leftmost-descendent rloc)))
+          (treepy-up loc)))))
+
+(defun treepy-next (loc &optional order)
+  (cl-case (or order ':preorder)
+    (':preorder (treepy--preorder-next loc))
+    (':postorder (treepy--postorder-next loc))
+    (t (error "unrecognized order"))))
+
+(defun treepy--preorder-prev (loc)
   (let ((lloc (treepy-left loc)))
     (if lloc
         (progn
@@ -334,6 +355,20 @@ and `r' for LOC."
             (setq lloc (treepy-rightmost child)))
           lloc)
       (treepy-up loc))))
+
+(defun treepy--postorder-prev (loc)
+  (if (treepy-branch-p loc)
+      (treepy-rightmost (treepy-down loc))
+    (progn
+      (while (not (treepy-left loc))
+        (setq loc (treepy-up loc)))
+      (treepy-left loc))))
+
+(defun treepy-prev (loc &optional order)
+  (cl-case (or order ':preorder)
+    (':preorder (treepy--preorder-prev loc))
+    (':postorder (treepy--postorder-prev loc))
+    (t (error "unrecognized order"))))
 
 (defun treepy-end-p (loc)
   (equal :end (treepy--context loc)))
