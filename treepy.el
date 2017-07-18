@@ -43,9 +43,9 @@
 
 (defun treepy-walk (inner outer form)
   "Using INNER and OUTER, traverse FORM, an arbitrary data structure.
-INNER and OUTER are functions. Apply INNER to each element of
-form, building up a data structure of the same type, then apply
-OUTER to the result. Recognize cons, lists, alists, vectors and
+INNER and OUTER are functions.  Apply INNER to each element of
+FORM, building up a data structure of the same type, then apply
+OUTER to the result.  Recognize cons, lists, alists, vectors and
 hash tables."
   (cond
    ((and (listp form) (cdr form) (atom (cdr form))) (funcall outer (cons (funcall inner (car form))
@@ -58,7 +58,7 @@ hash tables."
 (defun treepy-postwalk (f form)
   "Perform a depth-first, post-order traversal of F applied to FORM.
 Call F on each sub-form, use F's return value in place of the
-original. Recognize cons, lists, alists, vectors and
+original.  Recognize cons, lists, alists, vectors and
 hash tables."
   (treepy-walk (apply-partially #'treepy-postwalk f) f form))
 
@@ -67,7 +67,7 @@ hash tables."
   (treepy-walk (apply-partially #'treepy-prewalk f) #'identity (funcall f form)))
 
 (defun treepy-postwalk-demo (form)
-  "Demonstrates the behavior of `treepy-postwalk' for FORM.
+  "Demonstrate the behavior of `treepy-postwalk' for FORM.
 Return a list of each form as it is walked."
   (let ((walk nil))
     (treepy-postwalk (lambda (x) (push x walk) x)
@@ -82,18 +82,20 @@ Return a list of each form as it is walked."
                     form)
     (reverse walk)))
 
-(defun treepy-postwalk-replace (smap form)
+(defun treepy-postwalk-replace (smap form &optional testfn)
   "Recursively use SMAP to transform FORM by doing replacing operations.
-Replace in FORM keys in SMAP with their values. Does replacement
-at the leaves of the tree first."
-  (treepy-postwalk (lambda (x) (if (map-contains-key smap x) (map-elt smap x) x))
+The optional TESTFN parameter is the function to be used by
+`map-contains-key'.  Replace in FORM keys in SMAP with their
+values.  Does replacement at the leaves of the tree first."
+  (treepy-postwalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
                    form))
 
-(defun treepy-prewalk-replace (smap form)
+(defun treepy-prewalk-replace (smap form &optional testfn)
   "Recursively use SMAP to transform FORM by doing replacing operations.
-Replace in FORM keys in SMAP with their values. Does replacement
-at the root of the tree first."
-  (treepy-prewalk (lambda (x) (if (map-contains-key smap x) (map-elt smap x) x))
+The optional TESTFN parameter is the function to be used by
+`map-contains-key'.  Replace in FORM keys in SMAP with their
+values.  Does replacement at the root of the tree first."
+  (treepy-prewalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
                   form))
 
 
@@ -187,7 +189,7 @@ ROOT is the root node."
 
 (defun treepy-vector-zip (root)
   "Return a zipper for nested vectors, given a ROOT vector."
-  (let ((make-node (lambda (node children) (apply #'vector children))) ; (treepy--with-meta children (treepy--meta node))
+  (let ((make-node (lambda (node children) (apply #'vector children)))
         (children (lambda (cs) (seq-into cs 'list))))
     (treepy-zipper #'vectorp children make-node root)))
 
@@ -202,7 +204,7 @@ ROOT is the root node."
   (funcall (treepy--meta loc ':branchp) (treepy-node loc)))
 
 (defun treepy-children (loc)
-  "Return a list of the children of node at LOC, which must be a branch."
+  "Return a children list of the node at LOC, which must be a branch."
   (if (treepy-branch-p loc)
       (funcall (treepy--meta loc ':children) (treepy-node loc))
     (error "Called children on a leaf node")))
@@ -343,7 +345,7 @@ The LOC is only used to supply the constructor."
        (treepy--meta loc)))))
 
 (defun treepy-replace (loc node)
-  "Replace in this LOC the NODE, without moving."
+  "Replace the node in this LOC with the given NODE, without moving."
   (let ((context (treepy--context loc)))
     (treepy--with-meta
      (cons node
@@ -386,18 +388,18 @@ walk."
 
 ;; Enumeration
 
-
 (defun treepy--preorder-next (loc)
   "Move to the next LOC in the hierarchy, depth-first in preorder.
 When reaching the end, returns a distinguished loc detectable via
-end?. If already at the end, stays there."
+`treepy-end-p'.  If already at the end, stays there."
   (if (equal :end (treepy--context loc))
       loc
     (let ((cloc loc))
       (or
        (and (treepy-branch-p cloc) (treepy-down cloc))
        (treepy-right cloc)
-       (let ((p cloc))
+       (let ((p cloc)
+             (pr nil))
          (while (and (treepy-up p) (not (setq pr (treepy-right (treepy-up p)))))
            (setq p (treepy-up p)))
          (or pr (cons (cons (treepy-node p) ':end) nil)))))))
@@ -405,7 +407,7 @@ end?. If already at the end, stays there."
 (defun treepy--postorder-next (loc)
   "Move to the next LOC in the hierarchy, depth-first in postorder.
 When reaching the end, returns a distinguished loc detectable via
-end?. If already at the end, stays there."
+`treepy-end-p'.  If already at the end, stays there."
   (if (equal :end (treepy--context loc))
       loc
     (if (null (treepy-up loc))
@@ -445,7 +447,7 @@ If already at the root, returns nil."
       (treepy-left loc))))
 
 (defun treepy-prev (loc &optional order)
-  "Move to the previous LOC in the hierarchy, depth-first. using ORDER if given.
+  "Move to the previous LOC in the hierarchy, depth-first, using ORDER if given.
 Possible values for ORDER are `:preorder' and `:postorder',
 defaults to the former."
   (cl-case (or order ':preorder)
