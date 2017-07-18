@@ -150,17 +150,17 @@ Reverses LEFT-CHILDREN so that they are correctly ordered as in
 the tree."
   (append (reverse left-children) right-children))
 
-(defmacro treepy--with-loc (loc &rest body)
-  "Bind common variables in LOC and execute BODY in lexical context."
+(defmacro treepy--with-loc (loc vars &rest body)
+  "Create a lexical context using LOC VARS.
+Execute BODY in this context."
   (declare (indent defun))
-  `(let* ((node     (treepy-node ,loc))
-          (context  (treepy--context ,loc))
-          (pnodes   (treepy--context ,loc ':pnodes))
-          (ppath    (treepy--context ,loc ':ppath))
-          (l        (treepy--context ,loc ':l))
-          (r        (treepy--context ,loc ':r))
-          (changed? (treepy--context ,loc ':changed?)))
-     ,@body))
+  (let ((lex-ctx (mapcar (lambda (v)
+                           (cl-case v
+                             ('node    `(node (treepy-node ,loc)))
+                             ('context `(context (treepy--context ,loc)))
+                             (t        `(,v (treepy--context ,loc (quote ,(intern (concat ":" (symbol-name v)))))))))
+                         vars)))
+    `(let* (,@lex-ctx) ,@body)))
 
 ;; Construction
 
@@ -183,12 +183,12 @@ ROOT is the root node."
 
 (defun treepy-list-zip (root)
   "Return a zipper for nested lists, given a ROOT list."
-  (let ((make-node (lambda (node children) children)))
+  (let ((make-node (lambda (_ children) children)))
     (treepy-zipper #'listp #'identity make-node root)))
 
 (defun treepy-vector-zip (root)
   "Return a zipper for nested vectors, given a ROOT vector."
-  (let ((make-node (lambda (node children) (apply #'vector children)))
+  (let ((make-node (lambda (_ children) (apply #'vector children)))
         (children (lambda (cs) (seq-into cs 'list))))
     (treepy-zipper #'vectorp children make-node root)))
 
@@ -233,7 +233,7 @@ with them.  The LOC is only used to supply the constructor."
 nil if no children."
   (when (treepy-branch-p loc)
     (let ((children (treepy-children loc)))
-      (treepy--with-loc loc
+      (treepy--with-loc loc (node context pnodes)
         (seq-let [c &rest cs] children
           (when children
             (treepy--with-meta
@@ -246,7 +246,7 @@ nil if no children."
 (defun treepy-up (loc)
   "Return the loc of the parent of the node at this LOC.
 nil if at the top."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node pnodes ppath changed? l r)
     (when pnodes
       (let ((pnode (car pnodes)))
         (treepy--with-meta
@@ -269,7 +269,7 @@ Reflect any alterations to the tree."
 (defun treepy-right (loc)
   "Return the loc of the right sibling of the node at this LOC.
 nil if there's no more right sibilings."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context l r)
     (seq-let [cr &rest rnext] r
       (when (and context r)
         (treepy--with-meta
@@ -282,7 +282,7 @@ nil if there's no more right sibilings."
 (defun treepy-rightmost (loc)
   "Return the loc of the rightmost sibling of the node at this LOC.
 If LOC is already the rightmost sibiling, return self."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context l r)
     (if (and context r)
         (treepy--with-meta
          (cons (car (last r))
@@ -295,7 +295,7 @@ If LOC is already the rightmost sibiling, return self."
 (defun treepy-left (loc)
   "Return the loc of the left sibling of the node at this LOC.
 nil if no more left sibilings."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context l r)
     (when (and context l)
       (seq-let [cl &rest lnext] l
         (treepy--with-meta
@@ -308,7 +308,7 @@ nil if no more left sibilings."
 (defun treepy-leftmost (loc)
   "Return the loc of the leftmost sibling of the node at this LOC.
 If LOC is already the leftmost sibiling, return self."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context l r)
     (if (and context l)
         (treepy--with-meta
          (cons (car (last l))
@@ -330,7 +330,7 @@ If LOC is already the leftmost sibiling, return self."
 (defun treepy-insert-left (loc item)
   "Insert as the left sibiling of this LOC'S node the ITEM.
 Return same loc with sibilings updated."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context l)
     (if (not context)
         (error "Insert at top")
       (treepy--with-meta
@@ -343,7 +343,7 @@ Return same loc with sibilings updated."
 (defun treepy-insert-right (loc item)
   "Insert as the right sibling of this LOC's node the ITEM.
 Return same loc with sibilings updated."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (node context r)
     (if (not context)
         (error "Insert at top")
       (treepy--with-meta
@@ -380,7 +380,7 @@ Return same loc with children updated."
   "Remove the node at LOC.
 Return the loc that would have preceded it in a depth-first
 walk."
-  (treepy--with-loc loc
+  (treepy--with-loc loc (context pnodes ppath l r)
     (if (not context)
         (error "Remove at top")
       (if (> (length l) 0)
@@ -388,7 +388,8 @@ walk."
                                                (treepy--context-assoc context
                                                                       ':l (cdr l)
                                                                       ':changed? t))
-                       (treepy--meta loc))))
+                                         (treepy--meta loc)))
+                (child nil))
             (while (setq child (and (treepy-branch-p nloc) (treepy-children nloc)))
               (setq nloc (treepy-rightmost child)))
             nloc)
@@ -439,7 +440,8 @@ Use ORDER if given.  Possible values for ORDER are `:preorder' and
 (defun treepy--preorder-prev (loc)
   "Move to the previous LOC in the hierarchy, depth-first preorder.
 If already at the root, returns nil."
-  (let ((lloc (treepy-left loc)))
+  (let ((lloc (treepy-left loc))
+        (child nil))
     (if lloc
         (progn
           (while (setq child (and (treepy-branch-p lloc) (treepy-children lloc)))
