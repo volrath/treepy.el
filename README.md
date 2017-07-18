@@ -1,3 +1,5 @@
+<img src="treepy.png" align="right" />
+
 # treepy.el (*ˈtriːpi*) [![Build Status](https://travis-ci.org/volrath/treepy.el.svg?branch=master)](https://travis-ci.org/volrath/treepy.el)
 
 A set of generic functions for traversing tree-like data structures recursively
