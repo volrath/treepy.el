@@ -309,6 +309,13 @@ The LOC is only used to supply the constructor."
          (treepy--meta loc))
       loc)))
 
+(defun treepy-leftmost-descendant (loc)
+  "Return the leftmost descendant of the given LOC.
+\(ie, down repeatedly)."
+  (while (treepy-branch-p loc)
+    (setq loc (treepy-down loc)))
+  loc)
+
 ;; Modification
 
 (defun treepy-insert-left (loc item)
@@ -379,12 +386,6 @@ walk."
 
 ;; Enumeration
 
-(defun treepy-leftmost-descendent (loc)
-  "Return the leftmost descendent of the given LOC.
-\(ie, down repeatedly)."
-  (while (treepy-branch-p loc)
-    (setq loc (treepy-down loc)))
-  loc)
 
 (defun treepy--preorder-next (loc)
   "Move to the next LOC in the hierarchy, depth-first in preorder.
@@ -410,7 +411,7 @@ end?. If already at the end, stays there."
     (if (null (treepy-up loc))
         (cons (cons (treepy-node loc) ':end) nil)
       (or (let ((rloc (treepy-right loc)))
-            (and rloc (treepy-leftmost-descendent rloc)))
+            (and rloc (treepy-leftmost-descendant rloc)))
           (treepy-up loc)))))
 
 (defun treepy-next (loc &optional order)

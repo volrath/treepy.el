@@ -258,7 +258,7 @@
   (let ((zp (treepy-zipper #'listp #'numered-children #'numered-make-node numered-tree))
         (visited nil))
     (when (equal order :postorder)
-      (setq zp (treepy-leftmost-descendent zp)))
+      (setq zp (treepy-leftmost-descendant zp)))
     (while (not (treepy-end-p zp))
       (let ((node (treepy-node zp)))
         (push (if (listp node) (car node) node) visited))
@@ -371,7 +371,7 @@ be (defn new-&node-type> [field-map])."
   (equal (map-elt node ':left) (map-elt node ':right)))
 
 (defun simplify-tree (zipper)
-  (let ((loc (treepy-leftmost-descendent zipper)))
+  (let ((loc (treepy-leftmost-descendant zipper)))
     (if (treepy-end-p loc)
         (treepy-root loc)
       (progn
