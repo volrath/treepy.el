@@ -136,5 +136,6 @@
   (should (equal (treepy-postwalk-replace '((:a . :b)) '(:a (1 2 3 :c :a) ((:a . :c) (:c . :a))))
                  '(:b (1 2 3 :c :b) ((:b . :c) (:c . :b))))))
 
+(provide 'treepy-walker-tests)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy-walker-tests.el ends here

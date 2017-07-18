@@ -411,5 +411,6 @@ be (defn new-&node-type> [field-map])."
                                  )))
                  (simplify-tree custom-zipper))))
 
+(provide 'treepy-zipper-tests)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy-zipper-tests.el ends here

@@ -1,6 +1,8 @@
 ;;; treepy.el --- Generic tree traversing tools           -*- lexical-binding: t -*-
-;; 
+;;
 ;; Filename: treepy.el
+;; 
+;; Copyright (C) 2017 Daniel Barreto
 ;;
 ;; Description: Generic Tree Traversing Tools
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
@@ -15,7 +17,9 @@
 ;;; Commentary:
 ;; 
 ;; Generic tools for recursive and iterative tree traversing based on
-;; clojure.walk and clojure.zip respectively.
+;; clojure.walk and clojure.zip respectively.  Depends on `map', a map
+;; manipulation library built in Emacs 25.1.  All functions are prefixed
+;; with "treepy-"
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
@@ -37,7 +41,6 @@
 ;;; Code:
 
 (require 'map)
-
 
 ;;; Walk (recursive tree traversing)
 
@@ -63,7 +66,8 @@ hash tables."
   (treepy-walk (apply-partially #'treepy-postwalk f) f form))
 
 (defun treepy-prewalk (f form)
-  "Like postwalk, Perform function F on FORM but does pre-order traversal."
+  "Perform a depth-first, pre-order traversal of F applied to FORM.
+Like `treepy-postwalk'."
   (treepy-walk (apply-partially #'treepy-prewalk f) #'identity (funcall f form)))
 
 (defun treepy-postwalk-demo (form)
@@ -83,18 +87,18 @@ Return a list of each form as it is walked."
     (reverse walk)))
 
 (defun treepy-postwalk-replace (smap form &optional testfn)
-  "Recursively use SMAP to transform FORM by doing replacing operations.
-The optional TESTFN parameter is the function to be used by
-`map-contains-key'.  Replace in FORM keys in SMAP with their
-values.  Does replacement at the leaves of the tree first."
+  "Use SMAP to transform FORM by doing replacing operations.
+Recursively replace in FORM keys in SMAP with their values.  Does
+replacement at the leaves of the tree first.  The optional TESTFN
+parameter is the function to be used by `map-contains-key'."
   (treepy-postwalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
                    form))
 
 (defun treepy-prewalk-replace (smap form &optional testfn)
-  "Recursively use SMAP to transform FORM by doing replacing operations.
-The optional TESTFN parameter is the function to be used by
-`map-contains-key'.  Replace in FORM keys in SMAP with their
-values.  Does replacement at the root of the tree first."
+  "Use SMAP to transform FORM by doing replacing operations.
+Recursively replace in FORM keys in SMAP with their values.  Does
+replacement at the root of the tree first.  The optional TESTFN
+parameter is the function to be used by `map-contains-key'."
   (treepy-prewalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
                   form))
 
@@ -141,11 +145,13 @@ information."
   (cons obj meta))
 
 (defun treepy--join-children (left-children right-children)
-  "Return a 'left to right' list of children by joining LEFT-CHILDREN and RIGHT-CHILDREN."
+  "Return a joining of LEFT-CHILDREN and RIGHT-CHILDREN.
+Reverses LEFT-CHILDREN so that they are correctly ordered as in
+the tree."
   (append (reverse left-children) right-children))
 
 (defmacro treepy--with-loc (loc &rest body)
-  "Bind common variables in LOC and execute BODY in this lexical context."
+  "Bind common variables in LOC and execute BODY in lexical context."
   (declare (indent defun))
   `(let* ((node     (treepy-node ,loc))
           (context  (treepy--context ,loc))
@@ -203,8 +209,9 @@ ROOT is the root node."
     (error "Called children on a leaf node")))
 
 (defun treepy-make-node (loc node children)
-  "Return a new branch node, given an existing LOC, NODE and new CHILDREN.
-The LOC is only used to supply the constructor."
+  "Return a new branch node.
+Given an existing LOC, NODE and new CHILDREN, creates a new LOC
+with them.  The LOC is only used to supply the constructor."
   (funcall (treepy--meta loc ':make-node) node children))
 
 (defun treepy-path (loc)
@@ -222,7 +229,8 @@ The LOC is only used to supply the constructor."
 ;; Navigation
 
 (defun treepy-down (loc)
-  "Return the loc of the leftmost child of the node at this LOC, or nil if no children."
+  "Return the loc of the leftmost child of the node at this LOC.
+nil if no children."
   (when (treepy-branch-p loc)
     (let ((children (treepy-children loc)))
       (treepy--with-loc loc
@@ -236,7 +244,8 @@ The LOC is only used to supply the constructor."
              (treepy--meta loc))))))))
 
 (defun treepy-up (loc)
-  "Return the loc of the parent of the node at this LOC, or nil if at the top."
+  "Return the loc of the parent of the node at this LOC.
+nil if at the top."
   (treepy--with-loc loc
     (when pnodes
       (let ((pnode (car pnodes)))
@@ -248,7 +257,8 @@ The LOC is only used to supply the constructor."
          (treepy--meta loc))))))
 
 (defun treepy-root (loc)
-  "Zip from LOC all the way up and return the root node, reflecting any alterations."
+  "Zip from LOC all the way up and return the root node.
+Reflect any alterations to the tree."
   (if (equal ':end (treepy--context loc))
       (treepy-node loc)
     (let ((p loc))
@@ -257,7 +267,8 @@ The LOC is only used to supply the constructor."
       (treepy-node loc))))
 
 (defun treepy-right (loc)
-  "Return the loc of the right sibling of the node at this LOC, or nil."
+  "Return the loc of the right sibling of the node at this LOC.
+nil if there's no more right sibilings."
   (treepy--with-loc loc
     (seq-let [cr &rest rnext] r
       (when (and context r)
@@ -269,7 +280,8 @@ The LOC is only used to supply the constructor."
          (treepy--meta loc))))))
 
 (defun treepy-rightmost (loc)
-  "Return the loc of the rightmost sibling of the node at this LOC, or self."
+  "Return the loc of the rightmost sibling of the node at this LOC.
+If LOC is already the rightmost sibiling, return self."
   (treepy--with-loc loc
     (if (and context r)
         (treepy--with-meta
@@ -281,7 +293,8 @@ The LOC is only used to supply the constructor."
       loc)))
 
 (defun treepy-left (loc)
-  "Return the loc of the left sibling of the node at this LOC, or nil."
+  "Return the loc of the left sibling of the node at this LOC.
+nil if no more left sibilings."
   (treepy--with-loc loc
     (when (and context l)
       (seq-let [cl &rest lnext] l
@@ -293,7 +306,8 @@ The LOC is only used to supply the constructor."
          (treepy--meta loc))))))
 
 (defun treepy-leftmost (loc)
-  "Return the loc of the leftmost sibling of the node at this LOC, or self."
+  "Return the loc of the leftmost sibling of the node at this LOC.
+If LOC is already the leftmost sibiling, return self."
   (treepy--with-loc loc
     (if (and context l)
         (treepy--with-meta
@@ -314,7 +328,8 @@ The LOC is only used to supply the constructor."
 ;; Modification
 
 (defun treepy-insert-left (loc item)
-  "Insert as the left sibiling of this LOC'S node the ITEM, without moving."
+  "Insert as the left sibiling of this LOC'S node the ITEM.
+Return same loc with sibilings updated."
   (treepy--with-loc loc
     (if (not context)
         (error "Insert at top")
@@ -326,7 +341,8 @@ The LOC is only used to supply the constructor."
        (treepy--meta loc)))))
 
 (defun treepy-insert-right (loc item)
-  "Insert as the right sibling of this LOC's node the ITEM, without moving."
+  "Insert as the right sibling of this LOC's node the ITEM.
+Return same loc with sibilings updated."
   (treepy--with-loc loc
     (if (not context)
         (error "Insert at top")
@@ -351,11 +367,13 @@ The LOC is only used to supply the constructor."
   (treepy-replace loc (apply f (treepy-node loc) args)))
 
 (defun treepy-insert-child (loc item)
-  "Insert as the leftmost child of this LOC's node the ITEM, without moving."
+  "Insert as the leftmost child of this LOC's node the ITEM.
+Return same loc with children updated."
   (treepy-replace loc (treepy-make-node loc (treepy-node loc) (cons item (treepy-children loc)))))
 
 (defun treepy-append-child (loc item)
-  "Insert as the rightmost child of this LOC'S node the ITEM, without moving."
+  "Insert as the rightmost child of this LOC'S node the ITEM.
+Return same loc with children updated."
   (treepy-replace loc (treepy-make-node loc (treepy-node loc) (append (treepy-children loc) `(,item)))))  ;; TODO: check performance
 
 (defun treepy-remove (loc)
@@ -410,9 +428,9 @@ When reaching the end, returns a distinguished loc detectable via
           (treepy-up loc)))))
 
 (defun treepy-next (loc &optional order)
-  "Move to the next LOC in the hierarchy, depth-first, using ORDER if given.
-Possible values for ORDER are `:preorder' and `:postorder',
-defaults to the former."
+  "Move to the next LOC in the hierarchy, depth-first.
+Use ORDER if given.  Possible values for ORDER are `:preorder' and
+`:postorder', defaults to the former."
   (cl-case (or order ':preorder)
     (':preorder (treepy--preorder-next loc))
     (':postorder (treepy--postorder-next loc))
@@ -440,8 +458,8 @@ If already at the root, returns nil."
       (treepy-left loc))))
 
 (defun treepy-prev (loc &optional order)
-  "Move to the previous LOC in the hierarchy, depth-first, using ORDER if given.
-Possible values for ORDER are `:preorder' and `:postorder',
+  "Move to the previous LOC in the hierarchy, depth-first.
+Use ORDER if given.  Possible values for ORDER are `:preorder' and `:postorder',
 defaults to the former."
   (cl-case (or order ':preorder)
     (':preorder (treepy--preorder-prev loc))
