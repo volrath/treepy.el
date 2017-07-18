@@ -1,5 +1,4 @@
 language: emacs
-sudo: required
 cache: apt
 env:
   - EVM_EMACS=emacs-25.1-travis
