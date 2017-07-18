@@ -102,13 +102,6 @@ values.  Does replacement at the root of the tree first."
 ;;; Zipper (iterative tree traversing)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; loc structure: ([<node> <context>] <meta-alist>)
-;; context structure alist{:l <list of nodes>, :pnodes <list of nodes>
-;;                         :ppath <parent context>, :r <list of nodes>}
-
-;; list to vector: (apply #'vector the-list)
-;; vector to list: (seq-into the-vector 'list)
-
 (defun treepy--context (loc &optional key)
   "Return context for this LOC.
 If KEY is given, only return this key's value in context."
