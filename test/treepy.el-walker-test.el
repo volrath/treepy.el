@@ -1,8 +1,8 @@
-;;; treepy-walker-tests.el --- Generic tree traversing tools           -*- lexical-binding: t -*-
+;;; treepy-walker-tests.el --- Generic tree traversal tools           -*- lexical-binding: t -*-
 ;; 
 ;; Filename: treepy.el-walker-test.el
 ;;
-;; Description: Generic Tree Traversing Tools
+;; Description: Generic Tree Traversal Tools
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
 ;; Version: 0.1.0
@@ -13,7 +13,7 @@
 ;; 
 ;;; Commentary: 
 ;; 
-;; Generic tools for recursive and iterative tree traversing based on
+;; Generic tools for recursive and iterative tree traversal based on
 ;; clojure.walk and clojure.zip respectively.
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
