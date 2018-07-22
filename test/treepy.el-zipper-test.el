@@ -403,13 +403,101 @@ be (defn new-&node-type> [field-map])."
 (ert-deftest treepy-custom-tree-test ()
   (should (equal '((:type . :root)
                    (:children . (((:type . :compare-criteria)
-                                   (:left . "ab")
-                                   (:right . ((:type . :concat)
-                                              (:args "c" ((:type . :value)
-                                                          (:val . 1))))))
+                                  (:left . "ab")
+                                  (:right . ((:type . :concat)
+                                             (:args "c" ((:type . :value)
+                                                         (:val . 1))))))
                                  t ;; Second node was replaced by/simplified for `t'
                                  )))
                  (simplify-tree custom-zipper))))
+
+
+;;; Custom Zipper based on Parseclj
+;; AST representation for the following clojure code
+
+(defvar clj-ast-root
+  '((:node-type . :root)
+    (:position . 1)
+    (:children ((:node-type . :list)
+                (:position . 1)
+                (:children ((:node-type . :symbol)
+                            (:position . 2)
+                            (:form . "defn")
+                            (:value . defn))
+                           ((:node-type . :symbol)
+                            (:position . 7)
+                            (:form . "a-test")
+                            (:value . a-test))
+                           ((:node-type . :vector)
+                            (:position . 14)
+                            (:children ((:node-type . :symbol)
+                                        (:position . 15)
+                                        (:form . "x")
+                                        (:value . x))))
+                           ((:node-type . :string)
+                            (:position . 20)
+                            (:form . "\"fn documentation\"")
+                            (:value . "fn documentation"))
+                           ((:node-type . :map)
+                            (:position . 41)
+                            (:children ((:node-type . :keyword)
+                                        (:position . 42)
+                                        (:form . ":key")
+                                        (:value . :key))
+                                       ((:node-type . :symbol)
+                                        (:position . 47)
+                                        (:form . "x")
+                                        (:value . x))))))))
+  "Parseclj AST representation of:
+(defn a-test [x]
+  \"fn documentation\"
+  {:key x})")
+
+
+(defun treepy-parseclj--make-node (node children)
+  "Helper parseclj function to create nodes 'a la treepy'.
+NODE is an AST node.  CHILDREN is a list of AST nodes."
+  (mapcar (lambda (pair)
+            (if (eql (car pair) :children)
+                (cons :children children)
+              pair))
+          node))
+
+
+(defun treepy-parseclj--children (node)
+  "Return children for the AST NODE."
+  (map-elt node :children))
+
+
+(defun treepy-parseclj--branch-node-p (node)
+  "Return t if the given AST NODE is a branch node."
+  (not (member (map-elt node :type) '(:symbol :string))))
+
+
+(defun treepy-parseclj-ast-zip (ast-node)
+  "Create a treepy zipper for AST-NODE."
+  (treepy-zipper #'treepy-parseclj--branch-node-p
+                 #'treepy-parseclj--children
+                 #'treepy-parseclj--make-node
+                 ast-node))
+
+
+(defun treepy-parseclj--traverse-tree ()
+  (let ((zp (treepy-parseclj-ast-zip clj-ast-root))
+        (visited nil))
+    (while (not (treepy-end-p zp))
+      (let ((node (treepy-node zp)))
+        (push (or (map-elt node :value)
+                  (map-elt node :node-type))
+              visited))
+      (setq zp (treepy-next zp)))
+    (reverse visited)))
+
+
+(ert-deftest treepy-parseclj-test-next-order ()
+  (should (equal (treepy-parseclj--traverse-tree)
+                 '(:root :list defn a-test :vector x "fn documentation" :map :key x))))
+
 
 (provide 'treepy-zipper-tests)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
