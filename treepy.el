@@ -259,7 +259,7 @@ nil if at the top."
 (defun treepy-root (loc)
   "Zip from LOC all the way up and return the root node.
 Reflect any alterations to the tree."
-  (if (equal ':end (treepy--context loc))
+  (if (equal :end (treepy--context loc))
       (treepy-node loc)
     (let ((p loc))
       (while (setq p (treepy-up p))
@@ -414,7 +414,7 @@ When reaching the end, returns a distinguished loc detectable via
              (pr nil))
          (while (and (treepy-up p) (not (setq pr (treepy-right (treepy-up p)))))
            (setq p (treepy-up p)))
-         (or pr (cons (cons (treepy-node p) ':end) nil)))))))
+         (or pr (cons (cons (treepy-node p) :end) nil)))))))
 
 (defun treepy--postorder-next (loc)
   "Move to the next LOC in the hierarchy, depth-first in postorder.
@@ -423,7 +423,7 @@ When reaching the end, returns a distinguished loc detectable via
   (if (equal :end (treepy--context loc))
       loc
     (if (null (treepy-up loc))
-        (cons (cons (treepy-node loc) ':end) nil)
+        (cons (cons (treepy-node loc) :end) nil)
       (or (let ((rloc (treepy-right loc)))
             (and rloc (treepy-leftmost-descendant rloc)))
           (treepy-up loc)))))
