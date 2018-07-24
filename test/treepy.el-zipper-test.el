@@ -5,7 +5,7 @@
 ;; Description: Generic Tree Traversal Tools
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "25"))
 ;; URL: https://github.com/volrath/treepy.el
 ;; 
@@ -67,6 +67,7 @@
     (should (equal list-tree (treepy-root lz)))
     (should (equal list-tree (treepy-node lz)))))
 
+
 ;;; List Zipper
 
 (ert-deftest treepy-navigation ()
@@ -111,7 +112,29 @@
            (:r . (4 ((:a 5) (:b ((:c 6) (:d 7))))))))
     (-> lz
         treepy-up)
-    `(,list-tree . ,nil)))
+    `(,list-tree . ,nil))
+
+  ;; Treepy handles non-nil cdr ending lists gracefully.
+  (assert-traversing-with-persistent-zipper [lz (treepy-list-zip '(a b . c))]
+    (-> lz
+        treepy-next
+        treepy-next
+        treepy-next)
+    '(c . ((:l . (b a))
+           (:pnodes . ((a b . c)))
+           (:ppath . nil)
+           (:r . nil)))
+    (-> lz
+        treepy-prev
+        treepy-next)
+    '(c . ((:l . (b a))
+           (:pnodes . ((a b . c)))
+           (:ppath . nil)
+           (:r . nil)))
+    (-> lz
+        treepy-next)
+    '((a b . c) . :end)))
+
 
 ;;; Vector Zipper
 
@@ -270,6 +293,7 @@
                  '(1 2 4 5 3)))
   (should (equal (traverse-tree :postorder)
                  '(4 5 2 3 1))))
+
 
 ;;; Custom Zipper
 ;; Taken from Alex Miller's article: Tree visitors in Clojure
@@ -498,7 +522,7 @@ NODE is an AST node.  CHILDREN is a list of AST nodes."
   (should (equal (treepy-parseclj--traverse-tree)
                  '(:root :list defn a-test :vector x "fn documentation" :map :key x))))
 
-
 (provide 'treepy-zipper-tests)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy-zipper-tests.el ends here

@@ -8,7 +8,7 @@
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
 ;; Keywords: lisp, maint, tools
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/volrath/treepy.el
 ;; 
@@ -270,14 +270,20 @@ Reflect any alterations to the tree."
   "Return the loc of the right sibling of the node at this LOC.
 nil if there's no more right sibilings."
   (treepy--with-loc loc (node context l r)
-    (seq-let [cr &rest rnext] r
-      (when (and context r)
-        (treepy--with-meta
-         (cons cr
-               (treepy--context-assoc context
-                                      ':l (cons node l)
-                                      ':r rnext))
-         (treepy--meta loc))))))
+    (let ((r (if (listp r)
+                 r
+               ;; If `r' is not a list (or nil), then we're dealing with a non
+               ;; nil cdr ending list.
+               (cons r nil))))
+      (seq-let [cr &rest rnext] r
+        (when (and context r)
+          (treepy--with-meta
+           (cons cr
+                 (treepy--context-assoc context
+                                        ':l (cons node l)
+                                        ':r rnext))
+           (treepy--meta loc)))))))
+
 
 (defun treepy-rightmost (loc)
   "Return the loc of the rightmost sibling of the node at this LOC.
