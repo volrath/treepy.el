@@ -41,6 +41,7 @@
 ;;; Code:
 
 (require 'map)
+(require 'cl-lib)
 
 ;;; Walk (recursive tree traversal)
 
