@@ -182,7 +182,7 @@ For a manual installation, just place `treepy.el` in your `load-path` and
 
 - `treepy-insert-left` loc item
 
-  Inserts ITEM as the left sibiling of this LOC'S node, without moving.
+  Inserts ITEM as the left sibling of this LOC'S node, without moving.
 
 - `treepy-insert-right` loc item
 
@@ -288,7 +288,7 @@ So:
 ```
 
 - There's a new function in *treepy* to get the leftmost descendant of a
-  node/loc. Unsuprisingly, it's called `treepy-leftmost-descendant`. This function
+  node/loc. Unsurprisingly, it's called `treepy-leftmost-descendant`. This function
   is particularly useful when trying to traverse a tree in post order, since
   unlike preorder trasversal, the root is NOT the first element you want
   walk/visit. You might want to call `(treepy-leftmost-descendant root)` before
