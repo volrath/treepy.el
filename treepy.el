@@ -288,7 +288,7 @@ nil if there's no more right sibilings."
 
 (defun treepy-rightmost (loc)
   "Return the loc of the rightmost sibling of the node at this LOC.
-If LOC is already the rightmost sibiling, return self."
+If LOC is already the rightmost sibling, return self."
   (treepy--with-loc loc (node context l r)
     (if (and context r)
         (treepy--with-meta
@@ -314,7 +314,7 @@ nil if no more left sibilings."
 
 (defun treepy-leftmost (loc)
   "Return the loc of the leftmost sibling of the node at this LOC.
-If LOC is already the leftmost sibiling, return self."
+If LOC is already the leftmost sibling, return self."
   (treepy--with-loc loc (node context l r)
     (if (and context l)
         (treepy--with-meta
@@ -335,7 +335,7 @@ If LOC is already the leftmost sibiling, return self."
 ;;;; Modification
 
 (defun treepy-insert-left (loc item)
-  "Insert as the left sibiling of this LOC'S node the ITEM.
+  "Insert as the left sibling of this LOC'S node the ITEM.
 Return same loc with sibilings updated."
   (treepy--with-loc loc (node context l)
     (if (not context)
