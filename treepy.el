@@ -157,9 +157,9 @@ Execute BODY in this context."
   (declare (indent defun))
   (let ((lex-ctx (mapcar (lambda (v)
                            (cl-case v
-                             ('node    `(node (treepy-node ,loc)))
-                             ('context `(context (treepy--context ,loc)))
-                             (t        `(,v (treepy--context ,loc (quote ,(intern (concat ":" (symbol-name v)))))))))
+                             (node    `(node (treepy-node ,loc)))
+                             (context `(context (treepy--context ,loc)))
+                             (t       `(,v (treepy--context ,loc (quote ,(intern (concat ":" (symbol-name v)))))))))
                          vars)))
     `(let* (,@lex-ctx) ,@body)))
 
@@ -440,8 +440,8 @@ When reaching the end, returns a distinguished loc detectable via
 Use ORDER if given.  Possible values for ORDER are `:preorder' and
 `:postorder', defaults to the former."
   (cl-case (or order ':preorder)
-    (':preorder (treepy--preorder-next loc))
-    (':postorder (treepy--postorder-next loc))
+    (:preorder (treepy--preorder-next loc))
+    (:postorder (treepy--postorder-next loc))
     (t (error "Unrecognized order"))))
 
 (defun treepy--preorder-prev (loc)
@@ -471,8 +471,8 @@ If already at the root, returns nil."
 Use ORDER if given.  Possible values for ORDER are `:preorder' and `:postorder',
 defaults to the former."
   (cl-case (or order ':preorder)
-    (':preorder (treepy--preorder-prev loc))
-    (':postorder (treepy--postorder-prev loc))
+    (:preorder (treepy--preorder-prev loc))
+    (:postorder (treepy--postorder-prev loc))
     (t (error "Unrecognized order"))))
 
 (defun treepy-end-p (loc)

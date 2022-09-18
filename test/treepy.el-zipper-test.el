@@ -361,21 +361,21 @@ be (defn new-&node-type> [field-map])."
 
 (defun custom-children (node)
   (cl-case (node-type node)
-    (':root (map-elt node ':children))
-    (':compare-criteria (list (map-elt node ':left) (map-elt node ':right)))
-    (':concat (map-elt node ':args))
-    (':value (list (map-elt node ':val)))))
+    (:root (map-elt node ':children))
+    (:compare-criteria (list (map-elt node ':left) (map-elt node ':right)))
+    (:concat (map-elt node ':args))
+    (:value (list (map-elt node ':val)))))
 
 (defun custom-make-node (node children)
   (let* ((type (node-type node))
          (constructor (intern (concat "new-" (substring (symbol-name type) 1 nil)))))
     (funcall constructor
              (cl-case type
-               (':root `((:children . ,children)))
-               (':compare-criteria `((:left . ,(car children))
-                                     (:right . ,(cadr children))))
-               (':concat `((:args . ,children)))
-               (':value `((:val . ,(car children))))))))
+               (:root `((:children . ,children)))
+               (:compare-criteria `((:left . ,(car children))
+                                    (:right . ,(cadr children))))
+               (:concat `((:args . ,children)))
+               (:value `((:val . ,(car children))))))))
 
 (setq custom-zipper (treepy-zipper #'custom-branch-p #'custom-children #'custom-make-node custom-tree))
 
