@@ -1,38 +1,29 @@
 ;;; treepy-zipper-tests.el --- Generic tree traversal tools           -*- lexical-binding: t -*-
-;; 
-;; Filename: treepy.el-zipper-test.el
-;;
-;; Description: Generic Tree Traversal Tools
+
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "25"))
 ;; URL: https://github.com/volrath/treepy.el
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Commentary: 
-;; 
-;; Generic tools for recursive and iterative tree traversal based on
-;; clojure.walk and clojure.zip respectively.
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
+
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or (at
 ;; your option) any later version.
-;; 
+;;
 ;; This program is distributed in the hope that it will be useful, but
 ;; WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ;; General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
+
+;;; Commentary:
+
+;; Generic tools for recursive and iterative tree traversal based on
+;; clojure.walk and clojure.zip respectively.
+
 ;;; Code:
 
 (require 'ert)
@@ -361,21 +352,21 @@ be (defn new-&node-type> [field-map])."
 
 (defun custom-children (node)
   (cl-case (node-type node)
-    (':root (map-elt node ':children))
-    (':compare-criteria (list (map-elt node ':left) (map-elt node ':right)))
-    (':concat (map-elt node ':args))
-    (':value (list (map-elt node ':val)))))
+    (:root (map-elt node ':children))
+    (:compare-criteria (list (map-elt node ':left) (map-elt node ':right)))
+    (:concat (map-elt node ':args))
+    (:value (list (map-elt node ':val)))))
 
 (defun custom-make-node (node children)
   (let* ((type (node-type node))
          (constructor (intern (concat "new-" (substring (symbol-name type) 1 nil)))))
     (funcall constructor
              (cl-case type
-               (':root `((:children . ,children)))
-               (':compare-criteria `((:left . ,(car children))
-                                     (:right . ,(cadr children))))
-               (':concat `((:args . ,children)))
-               (':value `((:val . ,(car children))))))))
+               (:root `((:children . ,children)))
+               (:compare-criteria `((:left . ,(car children))
+                                    (:right . ,(cadr children))))
+               (:concat `((:args . ,children)))
+               (:value `((:val . ,(car children))))))))
 
 (setq custom-zipper (treepy-zipper #'custom-branch-p #'custom-children #'custom-make-node custom-tree))
 
@@ -524,5 +515,4 @@ NODE is an AST node.  CHILDREN is a list of AST nodes."
 
 (provide 'treepy-zipper-tests)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; treepy-zipper-tests.el ends here
