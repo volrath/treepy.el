@@ -80,18 +80,28 @@ Return a list of each form as it is walked."
 
 (defun treepy-postwalk-replace (smap form &optional testfn)
   "Use SMAP to transform FORM by doing replacing operations.
-Recursively replace in FORM keys in SMAP with their values.  Does
-replacement at the leaves of the tree first.  The optional TESTFN
-parameter is the function to be used by `map-contains-key'."
-  (treepy-postwalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
+Recursively replace in FORM keys in SMAP with their values.
+Does replacement at the leaves of the tree first."
+  ;; Also see comment in `map-contains-key's definition.
+  (declare (advertised-calling-convention (smap key) "0.1.3"))
+  (treepy-postwalk (lambda (x)
+                     (if (with-suppressed-warnings ((callargs map-contains-key))
+                           (map-contains-key smap x testfn))
+                         (map-elt smap x)
+                       x))
                    form))
 
 (defun treepy-prewalk-replace (smap form &optional testfn)
   "Use SMAP to transform FORM by doing replacing operations.
-Recursively replace in FORM keys in SMAP with their values.  Does
-replacement at the root of the tree first.  The optional TESTFN
-parameter is the function to be used by `map-contains-key'."
-  (treepy-prewalk (lambda (x) (if (map-contains-key smap x testfn) (map-elt smap x) x))
+Recursively replace in FORM keys in SMAP with their values.
+Does replacement at the root of the tree first."
+  ;; Also see comment in `map-contains-key's definition.
+  (declare (advertised-calling-convention (smap key) "0.1.3"))
+  (treepy-prewalk (lambda (x)
+                    (if (with-suppressed-warnings ((callargs map-contains-key))
+                          (map-contains-key smap x testfn))
+                        (map-elt smap x)
+                      x))
                   form))
 
 
