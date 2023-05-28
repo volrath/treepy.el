@@ -2,7 +2,7 @@
 
 ;; Author: Daniel Barreto <daniel.barreto.n@gmail.com>
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/volrath/treepy.el
 
