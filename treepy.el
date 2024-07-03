@@ -131,6 +131,7 @@ If KEY is given, only return this key's value in context."
 
 (defun treepy--context-assoc (context &rest kvs)
   "Immutable map association in CONTEXT using KVS."
+  (declare (indent defun))
   (seq-reduce (lambda (context kv)
                 (seq-let [k v] kv
                   (treepy--context-assoc-1 context k v)))
@@ -289,8 +290,8 @@ nil if there's no more right siblings."
           (treepy--with-meta
            (cons cr
                  (treepy--context-assoc context
-                                        ':l (cons node l)
-                                        ':r rnext))
+                   ':l (cons node l)
+                   ':r rnext))
            (treepy--meta loc)))))))
 
 
@@ -302,8 +303,8 @@ If LOC is already the rightmost sibling, return self."
         (treepy--with-meta
          (cons (car (last r))
                (treepy--context-assoc context
-                                      ':l (treepy--join-children l (cons node (butlast r)))
-                                      ':r nil))
+                 ':l (treepy--join-children l (cons node (butlast r)))
+                 ':r nil))
          (treepy--meta loc))
       loc)))
 
@@ -316,8 +317,8 @@ nil if no more left siblings."
         (treepy--with-meta
          (cons cl
                (treepy--context-assoc context
-                                      ':l lnext
-                                      ':r (cons node r)))
+                 ':l lnext
+                 ':r (cons node r)))
          (treepy--meta loc))))))
 
 (defun treepy-leftmost (loc)
@@ -328,8 +329,8 @@ If LOC is already the leftmost sibling, return self."
         (treepy--with-meta
          (cons (car (last l))
                (treepy--context-assoc context
-                                      ':l []
-                                      ':r (treepy--join-children (butlast l) (cons node r))))
+                 ':l []
+                 ':r (treepy--join-children (butlast l) (cons node r))))
          (treepy--meta loc))
       loc)))
 
@@ -351,8 +352,8 @@ Return same loc with siblings updated."
       (treepy--with-meta
        (cons node
              (treepy--context-assoc context
-                                    ':l (cons item l)
-                                    ':changed? t))
+               ':l (cons item l)
+               ':changed? t))
        (treepy--meta loc)))))
 
 (defun treepy-insert-right (loc item)
@@ -364,8 +365,8 @@ Return same loc with siblings updated."
       (treepy--with-meta
        (cons node
              (treepy--context-assoc context
-                                    ':r (cons item r)
-                                    ':changed? t))
+               ':r (cons item r)
+               ':changed? t))
        (treepy--meta loc)))))
 
 (defun treepy-replace (loc node)
@@ -374,7 +375,7 @@ Return same loc with siblings updated."
     (treepy--with-meta
      (cons node
            (treepy--context-assoc context
-                                  ':changed? t))
+             ':changed? t))
      (treepy--meta loc))))
 
 (defun treepy-edit (loc f &rest args)
@@ -405,8 +406,8 @@ walk."
       (if (> (length l) 0)
           (let ((nloc (treepy--with-meta (cons (car l)
                                                (treepy--context-assoc context
-                                                                      ':l (cdr l)
-                                                                      ':changed? t))
+                                                 ':l (cdr l)
+                                                 ':changed? t))
                                          (treepy--meta loc)))
                 (child nil))
             (while (setq child (and (treepy-branch-p nloc)
