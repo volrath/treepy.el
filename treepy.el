@@ -43,11 +43,13 @@ FORM, building up a data structure of the same type, then apply
 OUTER to the result.  Recognize cons, lists, alists, vectors and
 hash tables."
   (cond
-   ((and (listp form) (cdr form) (atom (cdr form))) (funcall outer (cons (funcall inner (car form))
-                                                                         (funcall inner (cdr form)))))
+   ((and (listp form) (cdr form) (atom (cdr form)))
+    (funcall outer (cons (funcall inner (car form))
+                         (funcall inner (cdr form)))))
    ((listp form) (funcall outer (mapcar inner form)))
    ((vectorp form) (funcall outer (apply #'vector (mapcar inner form))))
-   ((hash-table-p form) (funcall outer (map-apply (lambda (k v) (funcall inner (cons k v))) form)))
+   ((hash-table-p form)
+    (funcall outer (map-apply (lambda (k v) (funcall inner (cons k v))) form)))
    (t (funcall outer form))))
 
 (defun treepy-postwalk (f form)
@@ -60,7 +62,8 @@ hash tables."
 (defun treepy-prewalk (f form)
   "Perform a depth-first, pre-order traversal of F applied to FORM.
 Like `treepy-postwalk'."
-  (treepy-walk (apply-partially #'treepy-prewalk f) #'identity (funcall f form)))
+  (treepy-walk (apply-partially #'treepy-prewalk f) #'identity
+               (funcall f form)))
 
 (defun treepy-postwalk-demo (form)
   "Demonstrate the behavior of `treepy-postwalk' for FORM.
@@ -156,12 +159,15 @@ the tree."
   "Create a lexical context using LOC VARS.
 Execute BODY in this context."
   (declare (indent defun))
-  (let ((lex-ctx (mapcar (lambda (v)
-                           (cl-case v
-                             (node    `(node (treepy-node ,loc)))
-                             (context `(context (treepy--context ,loc)))
-                             (t       `(,v (treepy--context ,loc (quote ,(intern (concat ":" (symbol-name v)))))))))
-                         vars)))
+  (let ((lex-ctx
+         (mapcar (lambda (v)
+                   (cl-case v
+                     (node  `(node (treepy-node ,loc)))
+                     (context `(context (treepy--context ,loc)))
+                     (t `(,v (treepy--context
+                              ,loc
+                              ',(intern (concat ":" (symbol-name v))))))))
+                 vars)))
     `(let* (,@lex-ctx) ,@body)))
 
 ;;;; Construction
@@ -253,7 +259,8 @@ nil if at the top."
       (let ((pnode (car pnodes)))
         (treepy--with-meta
          (if changed?
-             (cons (treepy-make-node loc pnode (treepy--join-children l (cons node r)))
+             (cons (treepy-make-node loc pnode
+                                     (treepy--join-children l (cons node r)))
                    (and ppath (treepy--context-assoc ppath ':changed? t)))
            (cons pnode ppath))
          (treepy--meta loc))))))
@@ -377,12 +384,16 @@ Return same loc with siblings updated."
 (defun treepy-insert-child (loc item)
   "Insert as the leftmost child of this LOC's node the ITEM.
 Return same loc with children updated."
-  (treepy-replace loc (treepy-make-node loc (treepy-node loc) (cons item (treepy-children loc)))))
+  (treepy-replace loc (treepy-make-node loc (treepy-node loc)
+                                        (cons item (treepy-children loc)))))
 
 (defun treepy-append-child (loc item)
   "Insert as the rightmost child of this LOC'S node the ITEM.
 Return same loc with children updated."
-  (treepy-replace loc (treepy-make-node loc (treepy-node loc) (append (treepy-children loc) `(,item)))))  ;; TODO: check performance
+  ;; TODO: check performance
+  (treepy-replace loc (treepy-make-node loc (treepy-node loc)
+                                        (append (treepy-children loc)
+                                                `(,item)))))
 
 (defun treepy-remove (loc)
   "Remove the node at LOC.
@@ -398,7 +409,8 @@ walk."
                                                                       ':changed? t))
                                          (treepy--meta loc)))
                 (child nil))
-            (while (setq child (and (treepy-branch-p nloc) (treepy-children nloc)))
+            (while (setq child (and (treepy-branch-p nloc)
+                                    (treepy-children nloc)))
               (setq nloc (treepy-rightmost child)))
             nloc)
         (treepy--with-meta
@@ -452,7 +464,8 @@ If already at the root, returns nil."
         (child nil))
     (if lloc
         (progn
-          (while (setq child (and (treepy-branch-p lloc) (treepy-children lloc)))
+          (while (setq child (and (treepy-branch-p lloc)
+                                  (treepy-children lloc)))
             (setq lloc (treepy-rightmost child)))
           lloc)
       (treepy-up loc))))
