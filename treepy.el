@@ -109,7 +109,6 @@ Does replacement at the root of the tree first."
 
 
 ;;; Zipper (iterative tree traversal)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun treepy--context (loc &optional key)
   "Return context for this LOC.
