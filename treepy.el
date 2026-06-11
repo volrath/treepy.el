@@ -302,7 +302,7 @@ If LOC is already the rightmost sibling, return self."
         (treepy--with-meta
          (cons (car (last r))
                (treepy--context-assoc context
-                 :l (treepy--join-children l (cons node (butlast r)))
+                 :l (reverse (treepy--join-children l (cons node (butlast r))))
                  :r nil))
          (treepy--meta loc))
       loc)))
@@ -328,7 +328,7 @@ If LOC is already the leftmost sibling, return self."
         (treepy--with-meta
          (cons (car (last l))
                (treepy--context-assoc context
-                 :l []
+                 :l nil
                  :r (treepy--join-children (butlast l) (cons node r))))
          (treepy--meta loc))
       loc)))

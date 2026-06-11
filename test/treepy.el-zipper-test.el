@@ -124,8 +124,44 @@
            (:r . nil)))
     (-> lz
         treepy-next)
-    '((a b . c) . :end)))
+    '((a b . c) . :end))
 
+  (assert-traversing-with-persistent-zipper [lz (treepy-list-zip '(1 2 3 4 5 6 7))]
+    (-> lz
+        treepy-down
+        treepy-rightmost)
+    '(7
+      (:l 6 5 4 3 2 1)
+      (:pnodes (1 2 3 4 5 6 7))
+      (:ppath)
+      (:r))
+    (-> lz
+        treepy-leftmost)
+    '(1
+      (:l)
+      (:pnodes (1 2 3 4 5 6 7))
+      (:ppath)
+      (:r 2 3 4 5 6 7))
+    (-> lz
+        treepy-right
+        treepy-right
+        treepy-right
+        treepy-rightmost)
+    '(7
+      (:l 6 5 4 3 2 1)
+      (:pnodes (1 2 3 4 5 6 7))
+      (:ppath)
+      (:r))
+    (-> lz
+        treepy-left
+        treepy-left
+        treepy-left
+        treepy-leftmost)
+    '(1
+      (:l)
+      (:pnodes (1 2 3 4 5 6 7))
+      (:ppath)
+      (:r 2 3 4 5 6 7))))
 
 ;;; Vector Zipper
 
